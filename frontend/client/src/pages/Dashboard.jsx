@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard,
   Calendar,
@@ -17,6 +19,9 @@ import {
   MessageCircle,
   MapPin,
   X,
+  Menu,
+  BookOpen,
+  Home as HomeIcon,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -117,38 +122,72 @@ const SCHEDULE_DATA = [
 
 const TASK_FILTERS = ["All task", "To do", "In progress", "Done"];
 
-function Sidebar({ activeNav, setActiveNav }) {
+function SidebarContent({ activeNav, setActiveNav, onClose }) {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    if (onClose) onClose();
+    navigate("/login");
+  };
+
   return (
-    <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-white border-r border-gray-200 p-4 shrink-0">
+    <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-2 px-2 mb-8">
-        <span className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100">
-          <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />
-        </span>
-        <span className="text-xl font-bold text-gray-800 tracking-tight">
-          EduWay
-        </span>
+      <div className="flex items-center justify-between px-2 mb-8">
+        <Link
+          to="/"
+          onClick={onClose}
+          className="flex items-center gap-2.5 text-gray-900 font-bold text-lg hover:opacity-80 transition-opacity"
+        >
+          <span className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-100">
+            <BookOpen size={18} className="text-emerald-600" />
+          </span>
+          <span className="text-xl font-bold text-gray-800 tracking-tight">
+            EduWay
+          </span>
+        </Link>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 flex flex-col gap-1">
+      <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
+        <Link
+          to="/"
+          onClick={onClose}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+        >
+          <HomeIcon size={18} />
+          <span className="flex-1 text-left">Home</span>
+        </Link>
         {NAV_ITEMS.map((item, i) => {
           const isActive = activeNav === i;
           return (
             <button
               key={item.label}
-              onClick={() => setActiveNav(i)}
+              onClick={() => {
+                setActiveNav(i);
+                if (onClose) onClose();
+              }}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer ${
                 isActive
-                  ? "bg-gray-900 text-white"
+                  ? "bg-gray-900 text-white shadow-sm"
                   : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
               }`}
             >
               <item.icon size={18} />
-              <span className="flex-1 text-left">{item.label}</span>
+              <span className="flex-1 text-left truncate">{item.label}</span>
               {item.badge && (
                 <span
-                  className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                     isActive
                       ? "bg-white/20 text-white"
                       : "bg-gray-100 text-gray-500"
@@ -163,56 +202,118 @@ function Sidebar({ activeNav, setActiveNav }) {
       </nav>
 
       {/* Bottom */}
-      <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-1">
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer">
+      <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-1 shrink-0">
+        <button
+          onClick={() => {
+            if (onClose) onClose();
+          }}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+        >
           <Settings size={18} />
           Settings
         </button>
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
+        >
           <LogOut size={18} />
           Log out
         </button>
       </div>
-    </aside>
+    </div>
   );
 }
 
-function TopBar({ query, setQuery }) {
+function Sidebar({ activeNav, setActiveNav, mobileOpen, setMobileOpen }) {
   return (
-    <div className="flex items-center gap-3 mb-6">
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex flex-col w-64 min-h-screen bg-white border-r border-gray-200 p-4 shrink-0 sticky top-0 h-screen">
+        <SidebarContent activeNav={activeNav} setActiveNav={setActiveNav} />
+      </aside>
+
+      {/* Mobile Drawer */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="fixed inset-y-0 left-0 w-72 max-w-[80vw] bg-white p-4 shadow-2xl z-10 flex flex-col h-full">
+            <SidebarContent
+              activeNav={activeNav}
+              setActiveNav={setActiveNav}
+              onClose={() => setMobileOpen(false)}
+            />
+          </aside>
+        </div>
+      )}
+    </>
+  );
+}
+
+function TopBar({ query, setQuery, onOpenMobileMenu }) {
+  const { user } = useAuth();
+  const userName = user?.name || "Kate Malone";
+  const userInitials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <div className="flex items-center gap-2 sm:gap-3 mb-6 flex-wrap sm:flex-nowrap">
+      {/* Mobile menu trigger */}
+      <button
+        onClick={onOpenMobileMenu}
+        className="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors shrink-0 shadow-sm"
+        aria-label="Open sidebar"
+      >
+        <Menu size={20} />
+      </button>
+
       {/* Search */}
-      <div className="flex-1 flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-gray-200 shadow-sm">
+      <div className="flex-1 min-w-[200px] flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-gray-200 shadow-sm focus-within:border-gray-400 focus-within:ring-2 focus-within:ring-gray-100 transition-all">
         <Search size={16} className="text-gray-400 shrink-0" />
         <input
           type="text"
-          placeholder="Search tasks..."
+          placeholder="Search tasks or subjects..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+          className="w-full bg-transparent text-sm outline-none placeholder:text-gray-400"
         />
       </div>
 
-      {/* AI button */}
-      <button className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors cursor-pointer">
-        <Sparkles size={18} />
-      </button>
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 shrink-0">
+        {/* AI button */}
+        <button
+          className="flex items-center justify-center w-10 h-10 rounded-xl bg-purple-100 text-purple-600 hover:bg-purple-200 transition-colors cursor-pointer shrink-0"
+          title="AI Assistant"
+        >
+          <Sparkles size={18} />
+        </button>
 
-      {/* Profile pill */}
-      <div className="hidden sm:flex items-center gap-2.5 bg-white rounded-xl px-3 py-1.5 border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold">
-          KM
+        {/* Profile pill */}
+        <div className="hidden sm:flex items-center gap-2.5 bg-white rounded-xl px-3 py-1.5 border border-gray-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow shrink-0">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {userInitials}
+          </div>
+          <div className="text-left leading-tight">
+            <p className="text-sm font-semibold text-gray-800 max-w-[110px] truncate">
+              {userName}
+            </p>
+            <p className="text-[11px] text-gray-400">Class 9A</p>
+          </div>
+          <ChevronDown size={14} className="text-gray-400 ml-1 shrink-0" />
         </div>
-        <div className="text-left leading-tight">
-          <p className="text-sm font-semibold text-gray-800">Kate Malone</p>
-          <p className="text-[11px] text-gray-400">Class 9A</p>
-        </div>
-        <ChevronDown size={14} className="text-gray-400 ml-1" />
+
+        {/* Menu */}
+        <button className="flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 transition-colors cursor-pointer shadow-sm shrink-0">
+          <MoreVertical size={18} />
+        </button>
       </div>
-
-      {/* Menu */}
-      <button className="flex items-center justify-center w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-400 hover:bg-gray-50 transition-colors cursor-pointer shadow-sm">
-        <MoreVertical size={18} />
-      </button>
     </div>
   );
 }
@@ -222,9 +323,9 @@ function TaskCard({ task }) {
   const isTodo = task.status === "todo";
 
   return (
-    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="text-sm font-semibold text-gray-800 leading-snug">
+    <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+      <div className="flex items-start justify-between gap-3 mb-2.5">
+        <h4 className="text-sm font-semibold text-gray-800 leading-snug flex-1 min-w-0 break-words">
           {task.title}
         </h4>
         <span
@@ -240,15 +341,21 @@ function TaskCard({ task }) {
         </span>
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
-        <span className="font-medium text-gray-500">{task.subject}</span>
+      <div className="flex items-center gap-2 text-xs text-gray-400 mb-3 flex-wrap">
+        <span className="font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
+          {task.subject}
+        </span>
         <span>•</span>
         <span>{task.dueDate}</span>
       </div>
 
       {/* Progress bar — only for in-progress */}
       {isInProgress && (
-        <div className="mb-2">
+        <div className="mb-3">
+          <div className="flex justify-between items-center text-[11px] text-gray-400 mb-1">
+            <span>Progress</span>
+            <span className="font-semibold text-orange-600">{task.progress}%</span>
+          </div>
           <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-orange-400 rounded-full transition-all"
@@ -258,9 +365,9 @@ function TaskCard({ task }) {
         </div>
       )}
 
-      <div className="flex items-center gap-1 text-xs text-gray-400">
+      <div className="flex items-center gap-1 text-xs text-gray-400 pt-1 border-t border-gray-50">
         <MessageCircle size={13} />
-        <span>{task.comments}</span>
+        <span>{task.comments} comments</span>
       </div>
     </div>
   );
@@ -284,17 +391,20 @@ function AddTaskModal({ isOpen, onClose, onAdd }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl my-8">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-gray-800">Add New Task</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+          >
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Title
             </label>
             <input
@@ -302,12 +412,13 @@ function AddTaskModal({ isOpen, onClose, onAdd }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter task title"
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+              required
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Subject
             </label>
             <input
@@ -315,21 +426,21 @@ function AddTaskModal({ isOpen, onClose, onAdd }) {
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="e.g. Mathematics"
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Due Date
             </label>
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
             />
           </div>
-          <div className="flex gap-3 mt-1">
+          <div className="flex gap-3 mt-2">
             <button
               type="button"
               onClick={onClose}
@@ -366,17 +477,20 @@ function AddNoteModal({ isOpen, onClose, onAdd }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl my-8">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-lg font-bold text-gray-800">Add New Note</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+          >
             <X size={20} />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Title
             </label>
             <input
@@ -384,12 +498,13 @@ function AddNoteModal({ isOpen, onClose, onAdd }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter note title"
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+              required
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Content
             </label>
             <textarea
@@ -397,10 +512,10 @@ function AddNoteModal({ isOpen, onClose, onAdd }) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Write your note..."
               rows={4}
-              className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 resize-none"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100 resize-none"
             />
           </div>
-          <div className="flex gap-3 mt-1">
+          <div className="flex gap-3 mt-2">
             <button
               type="button"
               onClick={onClose}
@@ -429,6 +544,7 @@ export default function Dashboard() {
   const [notes, setNotes] = useState(INITIAL_NOTES);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const filterMap = {
     0: null,
@@ -481,37 +597,49 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar activeNav={activeNav} setActiveNav={setActiveNav} />
+      {/* Sidebar (Desktop + Mobile Drawer) */}
+      <Sidebar
+        activeNav={activeNav}
+        setActiveNav={setActiveNav}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+      />
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
-          <TopBar query={searchQuery} setQuery={setSearchQuery} />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <TopBar
+            query={searchQuery}
+            setQuery={setQuery => setSearchQuery(setQuery)}
+            onOpenMobileMenu={() => setMobileOpen(true)}
+          />
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
-            {/* ---- Middle Column: Tasks ---- */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">My Tasks</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* ---- Left / Main Column: Tasks (7 cols on lg, 7 cols on xl) ---- */}
+            <section className="lg:col-span-7 flex flex-col gap-4 min-w-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">My Tasks</h2>
+                  <p className="text-xs text-gray-500">Track and manage your homework</p>
+                </div>
                 <button
                   onClick={() => setShowTaskModal(true)}
-                  className="flex items-center gap-1.5 bg-gray-900 text-white text-sm font-medium px-3.5 py-2 rounded-xl hover:bg-gray-800 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 bg-gray-900 text-white text-sm font-medium px-3.5 py-2 rounded-xl hover:bg-gray-800 transition-colors cursor-pointer shadow-sm"
                 >
                   <Plus size={16} />
-                  Add
+                  Add Task
                 </button>
               </div>
 
               {/* Filters */}
-              <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {TASK_FILTERS.map((label, i) => (
                   <button
                     key={label}
                     onClick={() => setActiveFilter(i)}
                     className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer ${
                       activeFilter === i
-                        ? "bg-gray-900 text-white"
+                        ? "bg-gray-900 text-white shadow-xs"
                         : "bg-white text-gray-500 border border-gray-200 hover:border-gray-300"
                     }`}
                   >
@@ -534,21 +662,83 @@ export default function Dashboard() {
               </div>
 
               {filteredTasks.length > 0 && (
-                <button className="mt-4 w-full py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-500 hover:bg-white hover:text-gray-700 transition-colors cursor-pointer">
+                <button className="w-full py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-500 hover:bg-white hover:text-gray-700 transition-colors cursor-pointer">
                   View all tasks
                 </button>
               )}
             </section>
 
-            {/* ---- Right Column: Notes + Schedule ---- */}
-            <aside className="flex flex-col gap-6">
-              {/* Notes */}
-              <section>
+            {/* ---- Right Column: Notes + Schedule (5 cols on lg) ---- */}
+            <aside className="lg:col-span-5 flex flex-col gap-6 min-w-0">
+              {/* Schedule Section */}
+              <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-800">My notes</h2>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-800">
+                      My Schedule
+                    </h2>
+                    <p className="text-xs text-gray-400">Today's classes</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-500 font-semibold bg-gray-50 px-2.5 py-1.5 rounded-lg border border-gray-100">
+                    May 14, Mon
+                    <ChevronDown size={14} />
+                  </div>
+                </div>
+
+                {/* Schedule list */}
+                <div className="flex flex-col divide-y divide-gray-100">
+                  {SCHEDULE_DATA.map((row, i) => (
+                    <div
+                      key={i}
+                      className={`py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 ${
+                        row.lesson === "Lunch" ? "opacity-60" : ""
+                      }`}
+                    >
+                      {/* Time pill */}
+                      <div className="shrink-0 font-medium text-xs text-gray-600 bg-gray-100 px-2.5 py-1 rounded-lg tabular-nums">
+                        {row.time}
+                      </div>
+
+                      {/* Lesson and Teacher */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">
+                          {row.lesson}
+                        </p>
+                        <div className="flex items-center gap-1.5 text-xs text-gray-400 truncate">
+                          {row.teacher !== "—" && (
+                            <span className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-300 to-purple-400 flex items-center justify-center text-white text-[9px] font-bold shrink-0">
+                              {row.teacher
+                                .split(" ")
+                                .map((w) => w[0])
+                                .join("")
+                                .slice(0, 2)}
+                            </span>
+                          )}
+                          <span className="truncate">{row.teacher}</span>
+                        </div>
+                      </div>
+
+                      {/* Location badge */}
+                      <div className="shrink-0 flex items-center gap-1 text-xs text-gray-500 bg-gray-50 border border-gray-100 px-2 py-1 rounded-md">
+                        <MapPin size={11} className="shrink-0 text-gray-400" />
+                        <span className="truncate max-w-[80px]">{row.location}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Notes Section */}
+              <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-800">My Notes</h2>
+                    <p className="text-xs text-gray-400">Quick study snippets</p>
+                  </div>
                   <button
                     onClick={() => setShowNoteModal(true)}
-                    className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors cursor-pointer"
+                    className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors cursor-pointer shadow-xs"
+                    title="Add quick note"
                   >
                     <Plus size={16} />
                   </button>
@@ -558,100 +748,41 @@ export default function Dashboard() {
                   {notes.map((note) => (
                     <div
                       key={note.id}
-                      className={`rounded-2xl p-4 ${
+                      className={`rounded-xl p-3.5 border ${
                         note.color === "green"
-                          ? "bg-emerald-50 border border-emerald-100"
-                          : "bg-purple-50 border border-purple-100"
+                          ? "bg-emerald-50/70 border-emerald-100 text-emerald-950"
+                          : "bg-purple-50/70 border-purple-100 text-purple-950"
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
                         <h4
-                          className={`text-sm font-bold ${
+                          className={`text-sm font-bold truncate flex-1 ${
                             note.color === "green"
-                              ? "text-emerald-800"
-                              : "text-purple-800"
+                              ? "text-emerald-900"
+                              : "text-purple-900"
                           }`}
                         >
                           {note.title}
                         </h4>
-                        <button className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                          <MoreVertical size={14} />
-                        </button>
+                        <span
+                          className={`text-[10px] font-medium shrink-0 ${
+                            note.color === "green"
+                              ? "text-emerald-600"
+                              : "text-purple-600"
+                          }`}
+                        >
+                          {note.date}
+                        </span>
                       </div>
                       <p
-                        className={`text-xs leading-relaxed mb-3 ${
+                        className={`text-xs leading-relaxed line-clamp-3 break-words ${
                           note.color === "green"
-                            ? "text-emerald-600/70"
-                            : "text-purple-600/70"
+                            ? "text-emerald-800/80"
+                            : "text-purple-800/80"
                         }`}
                       >
                         {note.preview}
                       </p>
-                      <p
-                        className={`text-[11px] ${
-                          note.color === "green"
-                            ? "text-emerald-400"
-                            : "text-purple-400"
-                        }`}
-                      >
-                        {note.date}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              {/* Schedule */}
-              <section>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-gray-800">
-                    My schedule
-                  </h2>
-                  <div className="flex items-center gap-1 text-sm text-gray-500 font-medium cursor-pointer">
-                    May 14, Mon
-                    <ChevronDown size={14} />
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  {/* Table header */}
-                  <div className="grid grid-cols-[70px_1fr_140px_100px] gap-2 px-4 py-2.5 border-b border-gray-100 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    <span>Time</span>
-                    <span>Lesson</span>
-                    <span>Teacher</span>
-                    <span>Location</span>
-                  </div>
-
-                  {/* Rows */}
-                  {SCHEDULE_DATA.map((row, i) => (
-                    <div
-                      key={i}
-                      className={`grid grid-cols-[70px_1fr_140px_100px] gap-2 px-4 py-3 items-center text-sm ${
-                        i < SCHEDULE_DATA.length - 1 ? "border-b border-gray-50" : ""
-                      } ${row.lesson === "Lunch" ? "text-gray-400" : ""}`}
-                    >
-                      <span className="font-medium text-gray-500 tabular-nums">
-                        {row.time}
-                      </span>
-                      <span className="font-medium text-gray-700">
-                        {row.lesson}
-                      </span>
-                      <span className="flex items-center gap-2 text-gray-500">
-                        <span className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-300 to-purple-400 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                          {row.teacher !== "—"
-                            ? row.teacher
-                                .split(" ")
-                                .map((w) => w[0])
-                                .join("")
-                                .slice(0, 2)
-                            : ""}
-                        </span>
-                        {row.teacher}
-                      </span>
-                      <span className="flex items-center gap-1 text-gray-400">
-                        <MapPin size={12} className="shrink-0" />
-                        {row.location}
-                      </span>
                     </div>
                   ))}
                 </div>
@@ -675,3 +806,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
